@@ -4,8 +4,7 @@ public class CacheDictionaryTests
 {
 	/// <summary>
 	/// As nice as a bunch of small unit-tests would be, testing this is
-	/// difficult because it depends on changes of state. To mock those changes of
-	/// state takes a lot of setup that has to 
+	/// difficult because it depends on changes of state.
 	/// </summary>
 	[Fact]
 	public void BIGTest_Count_CountPurged_GetItemsEnumerator_ItemGet_AutoRemovesPurged_Etc()
@@ -230,8 +229,4 @@ public class CacheDictionaryTests
 
 		return cd;
 	}
-
-	//DateTime _getNowRoundedUp(double addMins = 0)
-	//	=> DateTime.Now.RoundUp(TimeSpan.FromMinutes(1)).AddMinutes(addMins);
-
 }
