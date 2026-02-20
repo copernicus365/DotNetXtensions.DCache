@@ -1,6 +1,6 @@
-# DNX.DCache
+# DotNetXtensions.DCache
 
-[![NuGet](https://img.shields.io/nuget/v/DNX.DCache.svg)](https://www.nuget.org/packages/DNX.DCache)
+[![NuGet](https://img.shields.io/nuget/v/DotNetXtensions.DCache.svg)](https://www.nuget.org/packages/DotNetXtensions.DCache)
 
 Provides cached dictionary types:
 

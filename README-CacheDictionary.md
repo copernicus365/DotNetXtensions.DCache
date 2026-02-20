@@ -17,13 +17,13 @@ A passive purging strategy is core to this implementation. You must decide wheth
 ## Installation
 
 ```bash
-dotnet add package DNX.CacheDictionary
+dotnet add package DotNetXtensions.DCache
 ```
 
 ## Quick Start
 
 ```csharp
-using DNX.CacheDictionary;
+using DotNetXtensions.DCache;
 
 // Create a cache where items expire after 5 minutes
 CacheDictionary<string, User> cache = new(TimeSpan.FromMinutes(5));
