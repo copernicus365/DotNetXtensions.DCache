@@ -125,7 +125,7 @@ public class CacheDictionary<TKey, TValue> : IDictionary<TKey, TValue>
 	/// <param name="equalityComparer"></param>
 	public CacheDictionary(TimeSpan expires, IEqualityComparer<TKey> equalityComparer = null)
 	{
-		ArgumentOutOfRangeException.ThrowIfLessThan(expires, TimeSpan.FromSeconds(1));
+		ArgumentOutOfRangeException.ThrowIfLessThan(expires, TimeSpan.FromMilliseconds(1));
 
 		ExpiresAfter = expires;
 
