@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/root/">
+    <File Path="README.md" />
+    <File Path="README-CacheDictionary.md" />
+    <File Path="README-DCache.md" />
+  </Folder>
+  <Project Path="DotNetXtensions.DCache/DotNetXtensions.DCache.csproj" />
+  <Project Path="Tests/Tests.csproj" />
+</Solution>
