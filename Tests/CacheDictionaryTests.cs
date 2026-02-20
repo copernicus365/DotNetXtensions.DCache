@@ -28,13 +28,13 @@ public class CacheDictionaryTests
 		Equal(2.0, addMinutesToExpireApples);
 
 		cd.GetDateTimeNow = () => now.AddMinutes(addMinutesToExpireApples - 0.001);
-		Equal(5, cd.CountPurged());
+		Equal(5, cd.CountNotExpired());
 
 		cd.GetDateTimeNow = () => now.AddMinutes(addMinutesToExpireApples);
 
-		int countPurged = cd.CountPurged();
+		int countPurged = cd.CountNotExpired();
 
-		Equal(5, cd.Count);
+		assertOrigSize5();
 		Equal(3, countPurged);
 
 		Equal(["Peaches", "Pears", "Pineapples"], cd.Keys.ToArray().OrderBy(n => n));
@@ -44,7 +44,7 @@ public class CacheDictionaryTests
 		// 1) TryGetValue works, 
 		// 2) it DOES remove an expired item when found
 
-		Equal(5, cd.Count);
+		assertOrigSize5();
 		False(cd.TryGetValue("Apples", out int _val));
 		Equal(4, cd.Count);
 
@@ -60,7 +60,7 @@ public class CacheDictionaryTests
 
 		cd.PurgeExpiredItems();
 
-		countPurged = cd.CountPurged();
+		countPurged = cd.CountNotExpired();
 
 		Single(cd);
 		Equal(1, countPurged);
@@ -75,18 +75,18 @@ public class CacheDictionaryTests
 		string keyNm = "Peaches";
 		int newVal = 88;
 
-		Equal(5, cd.Count);
+		assertOrigSize5();
 		Equal(3, cd[keyNm]);
 
 		cd.Add(keyNm, newVal);
 
-		Equal(5, cd.Count);
+		assertOrigSize5();
 		Equal(newVal, cd[keyNm]);
 
 		cd[keyNm] = newVal;
 		cd.Add(keyNm, newVal);
 
-		Equal(5, cd.Count);
+		assertOrigSize5();
 		Equal(newVal, cd[keyNm]);
 
 		// --- now DO add a new value, but then add it again
@@ -108,19 +108,19 @@ public class CacheDictionaryTests
 		cd.RunPurgeTS = TimeSpan.FromMinutes(1);
 		cd.GetDateTimeNow = () => now;
 
-		Equal(5, cd.Count);
-		Equal(5, cd.Count); // intentional doublet? make sure Count doesn't affect anything? Ok, fine, but its a nothingburger
+		assertOrigSize5();
+		assertOrigSize5(); // intentional doublet? make sure Count doesn't affect anything? Ok, fine, but its a nothingburger
 
 		True(cd.TryGetValue("Peaches", out int _val));
 		Equal(3, _val);
-		Equal(5, cd.Count);
+		assertOrigSize5();
 
 		now = now.AddMinutes(4);
 		DateTime nextPurgeDT = cd.ResetRunNextPurgeDT();
 
 		Equal(now.AddMinutes(1), nextPurgeDT); // == cd.RunPurgeTS set above 
 
-		Equal(5, cd.Count);
+		assertOrigSize5();
 		False(cd.TryGetValue("Peaches", out _val));
 		True(cd.TryGetValue("Pineapples", out _val));
 		Equal(4, cd.Count);
@@ -132,7 +132,7 @@ public class CacheDictionaryTests
 		CacheDictionary<string, int> cd = getMockCacheDict(out DateTime now);
 		cd.RunPurgeTS = TimeSpan.FromMinutes(1);
 
-		Equal(5, cd.Count);
+		assertOrigSize5();
 
 		DateTime nextPurgeDT = cd.ResetRunNextPurgeDT();
 		// MUST run this while Now was plain Now, AFTER mock that its 4 mins later
@@ -142,7 +142,7 @@ public class CacheDictionaryTests
 		Equal(4.0, minsToExpirePears);
 		cd.GetDateTimeNow = () => now.AddMinutes(minsToExpirePears);
 
-		Equal(5, cd.Count);
+		assertOrigSize5();
 		False(cd.TryGetValue("Peaches", out int _val));
 		True(cd.TryGetValue("Pineapples", out _val));
 		Single(cd);
@@ -159,13 +159,17 @@ public class CacheDictionaryTests
 		{ "Pineapples", 5 },
 	};
 
+	// yes, tests can run multi-threaded, BUT, I believe each makes a new instance of this class
+	// currently class field only for allowing `assertOrigSize5` method
+	CacheDictionary<string, int> _cd;
+	void assertOrigSize5() => Equal(5, _cd.Count);
 
 	CacheDictionary<string, int> getMockCacheDict(out DateTime now)
 	{
 		DateTime nw = now = DateTime.Parse("2026-02-03 13:35:00"); // _getNowRoundedUp();
 		DateTime nowP2 = now.AddMinutes(2);
 
-		CacheDictionary<string, int> cd = new(TimeSpan.FromMinutes(1)) {
+		CacheDictionary<string, int> cd = _cd = new(TimeSpan.FromMinutes(1)) {
 
 			// IMPORTANT NOTE:
 			// for mocking, we MUST set this value to greater than highest 

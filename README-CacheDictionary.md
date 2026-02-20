@@ -123,7 +123,7 @@ WriteLine(cache["key"]); // Returns 100 (case-insensitive)
 
 - **`ExpiresAfter`**: Gets the expiration timespan for items
 - **`Count`**: Returns the internal dictionary count (may include expired items)
-- **`CountPurged()`**: Returns count after winnowing expired items (requires full scan)
+- **`CountNotExpired()`**: Returns count winnowing expired items (requires full scan)
 - **`Keys`**: Gets all non-expired keys
 - **`Values`**: Gets all non-expired values
 - **`RunPurgeTS`**: Gets/sets the interval for automatic purge checks
@@ -164,7 +164,7 @@ cache.Add("key", "value2"); // Updates, does NOT throw
 The `Count` property returns the internal dictionary count, which may include recently expired items that haven't been purged yet. For an accurate count of non-expired items, use:
 
 ```csharp
-int accurateCount = cache.CountPurged(); // Requires full scan
+int accurateCount = cache.CountNotExpired(); // Requires full scan
 ```
 
 ### Thread Safety

@@ -16,7 +16,7 @@ namespace DotNetXtensions.DCache;
 /// in the fact that they are counted in the normal <see cref="Count"/> of this dictionary.
 /// We intentionally decided to not make that an outrageous calculation, but to simply
 /// return the count of internal items. To get a count of items that haven't expired, 
-/// you can call <see cref="CountPurged"/>, but that does take a full scan (just like 
+/// you can call <see cref="CountNotExpired"/>, but that does take a full scan (just like 
 /// <see cref="PurgeExpiredItems()"/>), and also note that the moment you get the value,
 /// the count may still change 1 nanosecond later. 
 /// For further details on how the items are actually purged internally, see further below:
@@ -156,7 +156,7 @@ public class CacheDictionary<TKey, TValue> : IDictionary<TKey, TValue>
 	/// <summary>
 	/// Returns the Count of *the internal* ConcurrentDictionary,
 	/// this is simply a redirection to that property. To get the count 
-	/// after expired items are purged, call <see cref="CountPurged"/>.
+	/// after expired items are purged, call <see cref="CountNotExpired"/>.
 	/// </summary>
 	public int Count => D.Count;
 
@@ -164,7 +164,7 @@ public class CacheDictionary<TKey, TValue> : IDictionary<TKey, TValue>
 	/// Gets the count of items after any expired items are winnowed.
 	/// This requires a full iteration of the inner dictionary.
 	/// </summary>
-	public int CountPurged() => _GetPurgedItemsCount();
+	public int CountNotExpired() => _GetNotExpiredItemsCount();
 
 	public bool IsReadOnly => false;
 
@@ -322,12 +322,12 @@ public class CacheDictionary<TKey, TValue> : IDictionary<TKey, TValue>
 	}
 
 	/// <summary>
-	/// Keep this private, let user-friendly name be <see cref="CountPurged"/>,
+	/// Keep this private, let user-friendly name be <see cref="CountNotExpired"/>,
 	/// which just redirects to this (better grouping here next to GetItems).
 	/// Note, we could just iterate <see cref="GetItems"/>, but this avoids
 	/// any allocations, and is thus far superior for the job.
 	/// </summary>
-	int _GetPurgedItemsCount()
+	int _GetNotExpiredItemsCount()
 	{
 		DateTime now = DTNow;
 		int count = 0;
