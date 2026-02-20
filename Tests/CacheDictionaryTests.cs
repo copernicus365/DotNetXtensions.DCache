@@ -43,9 +43,9 @@ public class CacheDictionaryTests
 		// Let's demonstrate
 		// 1) TryGetValue works, 
 		// 2) it DOES remove an expired item when found
-		int _val;
+
 		Equal(5, cd.Count);
-		False(cd.TryGetValue("Apples", out _val));
+		False(cd.TryGetValue("Apples", out int _val));
 		Equal(4, cd.Count);
 
 		True(cd.TryGetValue("Peaches", out _val));
@@ -104,13 +104,13 @@ public class CacheDictionaryTests
 	[Fact]
 	public void AutoPurgeOnGet()
 	{
-		var cd = getMockCacheDict(out DateTime now);
+		CacheDictionary<string, int> cd = getMockCacheDict(out DateTime now);
 		cd.RunPurgeTS = TimeSpan.FromMinutes(1);
 		cd.GetDateTimeNow = () => now;
 
 		Equal(5, cd.Count);
+		Equal(5, cd.Count); // intentional doublet? make sure Count doesn't affect anything? Ok, fine, but its a nothingburger
 
-		Equal(5, cd.Count);
 		True(cd.TryGetValue("Peaches", out int _val));
 		Equal(3, _val);
 		Equal(5, cd.Count);
@@ -129,7 +129,7 @@ public class CacheDictionaryTests
 	[Fact]
 	public void TriggerFullPurgeOnGet()
 	{
-		var cd = getMockCacheDict(out DateTime now);
+		CacheDictionary<string, int> cd = getMockCacheDict(out DateTime now);
 		cd.RunPurgeTS = TimeSpan.FromMinutes(1);
 
 		Equal(5, cd.Count);
@@ -142,9 +142,8 @@ public class CacheDictionaryTests
 		Equal(4.0, minsToExpirePears);
 		cd.GetDateTimeNow = () => now.AddMinutes(minsToExpirePears);
 
-		int _val;
 		Equal(5, cd.Count);
-		False(cd.TryGetValue("Peaches", out _val));
+		False(cd.TryGetValue("Peaches", out int _val));
 		True(cd.TryGetValue("Pineapples", out _val));
 		Single(cd);
 	}
@@ -163,7 +162,7 @@ public class CacheDictionaryTests
 
 	CacheDictionary<string, int> getMockCacheDict(out DateTime now)
 	{
-		var nw = now = _getNowRoundedUp();
+		DateTime nw = now = DateTime.Parse("2026-02-03 13:35:00"); // _getNowRoundedUp();
 		DateTime nowP2 = now.AddMinutes(2);
 
 		CacheDictionary<string, int> cd = new(TimeSpan.FromMinutes(1)) {
@@ -181,6 +180,10 @@ public class CacheDictionaryTests
 			int val = kv.Value;
 
 			DateTime fakeAddedTimeAfterNow = now.AddMinutes(val);
+
+			//!!! we alter GetDateTimeNow WHILE adding (in this mock)
+			// thus GetDateTimeNow *must* not be readonly, for this purpose
+			// allows us to set anything we want, any snapshot of items (expired or not compared to a **final** "now"), etc
 			cd.GetDateTimeNow = () => fakeAddedTimeAfterNow;
 			cd.Add(ky, val);
 		}
@@ -190,7 +193,7 @@ public class CacheDictionaryTests
 		return cd;
 	}
 
-	DateTime _getNowRoundedUp(double addMins = 0)
-		=> DateTime.Now.RoundUp(TimeSpan.FromMinutes(1)).AddMinutes(addMins);
+	//DateTime _getNowRoundedUp(double addMins = 0)
+	//	=> DateTime.Now.RoundUp(TimeSpan.FromMinutes(1)).AddMinutes(addMins);
 
 }

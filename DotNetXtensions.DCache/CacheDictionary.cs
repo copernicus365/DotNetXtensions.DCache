@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
 
 namespace DotNetXtensions.DCache;
 
@@ -70,6 +71,8 @@ public class CacheDictionary<TKey, TValue> : IDictionary<TKey, TValue>
 	/// </summary>
 	public Func<DateTime> GetDateTimeNow { get; set; }
 
+	public bool ThrowOnGetNotFound { get; set; } = true;
+
 	/// <summary>
 	/// Returns the result of <see cref="GetDateTimeNow"/> if it is set (not-null),
 	/// else returns <see cref="DateTime.UtcNow"/>.
@@ -122,8 +125,7 @@ public class CacheDictionary<TKey, TValue> : IDictionary<TKey, TValue>
 	/// <param name="equalityComparer"></param>
 	public CacheDictionary(TimeSpan expires, IEqualityComparer<TKey> equalityComparer = null)
 	{
-		if(expires < TimeSpan.FromSeconds(1))
-			throw new ArgumentOutOfRangeException(nameof(expires));
+		ArgumentOutOfRangeException.ThrowIfLessThan(expires, TimeSpan.FromSeconds(1));
 
 		ExpiresAfter = expires;
 
@@ -142,14 +144,14 @@ public class CacheDictionary<TKey, TValue> : IDictionary<TKey, TValue>
 	/// that weren't purged yet (it calls <see cref="GetItems"/> which does this).
 	/// </summary>
 	public ICollection<TKey> Keys
-		=> GetItems().Select(kv => kv.Key).ToList();
+		=> [.. GetItems().Select(kv => kv.Key)];
 
 	/// <summary>
 	/// Values. Note that this does winnow any already expired internal items
 	/// that weren't purged yet (it calls <see cref="GetItems"/> which does this).
 	/// </summary>
 	public ICollection<TValue> Values
-		=> GetItems().Select(kv => kv.Value).ToList();
+		=> [.. GetItems().Select(kv => kv.Value)];
 
 	/// <summary>
 	/// Returns the Count of *the internal* ConcurrentDictionary,
@@ -175,7 +177,9 @@ public class CacheDictionary<TKey, TValue> : IDictionary<TKey, TValue>
 		get {
 			if(TryGetValue(key, out TValue val))
 				return val;
-			throw new ArgumentException("Key not found.");
+			if(ThrowOnGetNotFound)
+				throw new ArgumentException("Key not found.");
+			return val;
 		}
 		set => Add(key, value);
 	}
@@ -210,7 +214,10 @@ public class CacheDictionary<TKey, TValue> : IDictionary<TKey, TValue>
 			}
 			// Concious decision to REMOVE when we found it already expired
 			// this makes for one PROACTIVE step for removing items even if
-			// / when timed purger isn't working
+			// / when timed purger isn't working. Yes, this probably is anti
+			// 'idempotent' hocus potentus ;) but this is the core, very point
+			// of this class, handling time based expiration and AUTO handling
+			// that. Ie it's totally a declared goal
 			Remove(key);
 		}
 		value = default;
@@ -221,6 +228,7 @@ public class CacheDictionary<TKey, TValue> : IDictionary<TKey, TValue>
 	/// We have an input time, because 
 	/// </summary>
 	/// <param name="now"></param>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	void _PurgeIfNextPurgeTimeHit(DateTime now)
 	{
 		if(now >= _RunNextPurgeDT)
@@ -241,6 +249,11 @@ public class CacheDictionary<TKey, TValue> : IDictionary<TKey, TValue>
 	/// </summary>
 	public void PurgeExpiredItems(DateTime now)
 	{
+		if(D.IsEmpty) {
+			ResetRunNextPurgeDT();
+			return;
+		}
+
 		List<TKey> expKeys = [];
 
 		foreach(var kv in D)
@@ -285,8 +298,7 @@ public class CacheDictionary<TKey, TValue> : IDictionary<TKey, TValue>
 
 	public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
 	{
-		if(array == null)
-			throw new ArgumentNullException();
+		ArgumentNullException.ThrowIfNull(array);
 
 		if(arrayIndex < 0 || arrayIndex >= array.Length)
 			throw new ArgumentOutOfRangeException(nameof(arrayIndex));
