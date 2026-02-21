@@ -4,7 +4,7 @@
 
 Provides cached dictionary types:
 
-- [`CacheDictionary`]("./README-CacheDictionary.md"): an in-memory cached dictionary
+- [`CacheDictionary`]("./README-CacheDictionary.md"): an in-memory cache dictionary whose items auto-expire after set timespan
 - [`DCache`]("./README-DCache.md"): an implementation of `IDistributedCache` that abstracts the distributed-cache logic, functioning like a simple in-memory dictionary
 
 ## CacheDictionary
