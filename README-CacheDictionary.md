@@ -9,6 +9,7 @@
 - **High Performance**: Minimal overhead on normal Get/Set operations
 - **Passive Purging**: Expired items are removed intelligently without requiring external timers
 - **Guaranteed Fresh Data**: Expired items are never returned, even if still present internally
+- **Automatic Disposal**: Optional automatic disposal of `IDisposable` cached values via `disposeBeforeRemove` constructor parameter or `BeforeRemove` callback
 
 ## Limitations
 
@@ -43,14 +44,17 @@ bool found = cache.TryGetValue("user1", out _); // Returns false
 
 ### Automatic Disposal of Cached Resources
 
-When caching `IDisposable` resources like streams or database connections, use `SetDisposeBeforeRemove()` to automatically dispose them when removed:
+When caching `IDisposable` resources like streams or database connections, enable automatic disposal via constructor or `SetDisposeBeforeRemove()`:
 
 ```csharp
-// Cache database connections that expire after 10 minutes
-CacheDictionary<string, SqlConnection> cache = new(TimeSpan.FromMinutes(10));
+// Option 1: Enable via constructor parameter
+CacheDictionary<string, SqlConnection> cache = new(
+    TimeSpan.FromMinutes(10), 
+    disposeBeforeRemove: true);
 
-// Automatically dispose connections when they're removed or expire
-cache.SetDisposeBeforeRemove();
+// Option 2: Enable after construction
+CacheDictionary<string, SqlConnection> cache2 = new(TimeSpan.FromMinutes(10));
+cache2.SetDisposeBeforeRemove();
 
 cache["conn1"] = new SqlConnection(connectionString);
 // Connection will be automatically disposed when expired or removed
@@ -125,7 +129,7 @@ cache.RunPurgeTS = TimeSpan.FromMinutes(10);
 ```csharp
 CacheDictionary<string, int> cache = new(
     TimeSpan.FromMinutes(5),
-    StringComparer.OrdinalIgnoreCase
+    equalityComparer: StringComparer.OrdinalIgnoreCase
 );
 
 cache["KEY"] = 100;

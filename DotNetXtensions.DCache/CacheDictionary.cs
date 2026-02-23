@@ -153,7 +153,7 @@ public class CacheDictionary<TKey, TValue> : IDictionary<TKey, TValue>
 	/// </summary>
 	/// <param name="expires">Expiration time of items. Minimum value is 1 second.</param>
 	/// <param name="equalityComparer"></param>
-	public CacheDictionary(TimeSpan expires, IEqualityComparer<TKey> equalityComparer = null)
+	public CacheDictionary(TimeSpan expires, bool disposeBeforeRemove = false, IEqualityComparer<TKey> equalityComparer = null)
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(expires, TimeSpan.FromMilliseconds(1));
 
@@ -163,6 +163,9 @@ public class CacheDictionary<TKey, TValue> : IDictionary<TKey, TValue>
 		D = equalityComparer == null
 			? new ConcurrentDictionary<TKey, (DateTime expires, TValue value)>()
 			: new ConcurrentDictionary<TKey, (DateTime expires, TValue value)>(equalityComparer);
+
+		if(disposeBeforeRemove)
+			SetDisposeBeforeRemove();
 	}
 
 

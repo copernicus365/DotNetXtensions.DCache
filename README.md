@@ -20,6 +20,7 @@ For more details, see the [CacheDictionary README](./README-CacheDictionary.md).
 - **High Performance**: Minimal overhead on normal Get/Set operations
 - **Passive Purging**: Expired items are removed intelligently without requiring external timers
 - **Guaranteed Fresh Data**: Expired items are never returned, even if still present internally
+- **Automatic Disposal**: Optional automatic disposal of `IDisposable` cached values via `disposeBeforeRemove` constructor parameter or `BeforeRemove` callback
 
 For more details, see the [DCache README](./README-DCache.md).
 
