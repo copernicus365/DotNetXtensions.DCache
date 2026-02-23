@@ -58,6 +58,8 @@ public class CacheDictionary<TKey, TValue> : IDictionary<TKey, TValue>
 {
 	readonly ConcurrentDictionary<TKey, (DateTime expires, TValue value)> D;
 
+	// --- CONFIG PROPERTIES ---
+
 	public TimeSpan ExpiresAfter { get; private set; }
 
 	/// <summary>
@@ -71,6 +73,11 @@ public class CacheDictionary<TKey, TValue> : IDictionary<TKey, TValue>
 	/// </summary>
 	public Func<DateTime> GetDateTimeNow { get; set; }
 
+	/// <summary>
+	/// True by default, meaning that if a key is not found when getting an item, an exception will be thrown.
+	/// This is the default dictionary behavior (note we're using `ConcurrentDictionary` internally).
+	/// But if you want to have a more tolerant behavior, you can set this to false.
+	/// </summary>
 	public bool ThrowOnGetNotFound { get; set; } = true;
 
 	/// <summary>
@@ -115,8 +122,31 @@ public class CacheDictionary<TKey, TValue> : IDictionary<TKey, TValue>
 	public DateTime ResetRunNextPurgeDT()
 		=> _RunNextPurgeDT = DTNow + _RunPurgeTS;
 
+	/// <summary>
+	/// Optional callback that is invoked immediately before an item is removed from the cache.
+	/// This is called in all removal scenarios: explicit removal via <see cref="Remove(TKey)"/>, 
+	/// automatic purging of expired items via <see cref="PurgeExpiredItems()"/>, and when 
+	/// <see cref="Clear"/> is called. This is useful for cleanup operations, such as disposing 
+	/// of resources, logging removal events, or any other custom logic needed when cached items 
+	/// are removed. Note that this callback receives the <typeparamref name="TValue"/> that is 
+	/// being removed, not the key. For automatic disposal of <see cref="IDisposable"/> values, 
+	/// consider using the convenience method <see cref="SetDisposeBeforeRemove"/>.
+	/// </summary>
+	public Action<TValue> BeforeRemove { get; set; }
 
-	// --- CONSTRUCTORS ---
+	/// <summary>
+	/// Convenience method when <typeparamref name="TValue"/> implements <see cref="IDisposable"/>,
+	/// which sets <see cref="BeforeRemove"/> to dispose of cached value. If <typeparamref name="TValue"/>
+	/// is determined not to implement <see cref="IDisposable"/>, silently ignores.
+	/// </summary>
+	public void SetDisposeBeforeRemove()
+	{
+		if(typeof(TValue).IsAssignableTo(typeof(IDisposable))) {
+			BeforeRemove = val => (val as IDisposable)?.Dispose();
+		}
+	}
+
+	// --- CONSTRUCTOR ---
 
 	/// <summary>
 	/// Constructor
@@ -136,8 +166,7 @@ public class CacheDictionary<TKey, TValue> : IDictionary<TKey, TValue>
 	}
 
 
-
-	// --- CONSTRUCTORS ---
+	// --- PROPERTIES ---
 
 	/// <summary>
 	/// Keys. Note that this does winnow any already expired internal items
@@ -212,7 +241,7 @@ public class CacheDictionary<TKey, TValue> : IDictionary<TKey, TValue>
 				value = v.value;
 				return true;
 			}
-			// Concious decision to REMOVE when we found it already expired
+			// Conscious decision to REMOVE when we found it already expired
 			// this makes for one PROACTIVE step for removing items even if
 			// / when timed purger isn't working. Yes, this probably is anti
 			// 'idempotent' hocus potentus ;) but this is the core, very point
@@ -277,21 +306,36 @@ public class CacheDictionary<TKey, TValue> : IDictionary<TKey, TValue>
 		=> D.ContainsKey(key);
 
 	public bool Remove(TKey key)
-		=> D.TryRemove(key, out _);
+		=> __remove(key);
 
 	public bool Remove(KeyValuePair<TKey, TValue> item)
-		=> D.TryRemove(item.Key, out _);
+		=> __remove(item.Key);
+
+	bool __remove(TKey key)
+	{
+		bool removed = D.TryRemove(key, out var v);
+		if(removed && BeforeRemove != null)
+			BeforeRemove(v.value);
+		return removed;
+	}
+
 
 	public void Clear()
 	{
+		if(BeforeRemove != null) {
+			foreach(var kv in D)
+				BeforeRemove(kv.Value.value);
+		}
+
 		D.Clear();
 		ResetRunNextPurgeDT();
 	}
 
 	public bool Contains(KeyValuePair<TKey, TValue> item)
 	{
+		DateTime now = DTNow;
 		if(D.TryGetValue(item.Key, out (DateTime expires, TValue value) v))
-			if(v.value.Equals(item.Value))
+			if(v.expires > now && v.value.Equals(item.Value))
 				return true;
 		return false;
 	}
@@ -303,6 +347,7 @@ public class CacheDictionary<TKey, TValue> : IDictionary<TKey, TValue>
 		if(arrayIndex < 0 || arrayIndex >= array.Length)
 			throw new ArgumentOutOfRangeException(nameof(arrayIndex));
 
+		// if(Count > (arrayIndex + array.Length)) // <-- AI suggestion / bug fix. LOOK later...
 		if(Count > (arrayIndex + array.Length))
 			throw new ArgumentOutOfRangeException(nameof(arrayIndex));
 

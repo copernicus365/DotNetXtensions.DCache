@@ -41,6 +41,21 @@ Thread.Sleep(TimeSpan.FromMinutes(6));
 bool found = cache.TryGetValue("user1", out _); // Returns false
 ```
 
+### Automatic Disposal of Cached Resources
+
+When caching `IDisposable` resources like streams or database connections, use `SetDisposeBeforeRemove()` to automatically dispose them when removed:
+
+```csharp
+// Cache database connections that expire after 10 minutes
+CacheDictionary<string, SqlConnection> cache = new(TimeSpan.FromMinutes(10));
+
+// Automatically dispose connections when they're removed or expire
+cache.SetDisposeBeforeRemove();
+
+cache["conn1"] = new SqlConnection(connectionString);
+// Connection will be automatically disposed when expired or removed
+```
+
 ## How Expiration Works
 
 ### Passive Purging Strategy
@@ -117,6 +132,34 @@ cache["KEY"] = 100;
 WriteLine(cache["key"]); // Returns 100 (case-insensitive)
 ```
 
+### Before Remove Callback
+
+Set up custom logic to execute before items are removed from the cache:
+
+```csharp
+CacheDictionary<string, Stream> cache = new(TimeSpan.FromMinutes(5));
+
+// Log when items are removed
+cache.BeforeRemove = stream => {
+    WriteLine($"Removing stream from cache");
+    stream?.Dispose();
+};
+
+// Or use the convenience method for IDisposable types
+cache.SetDisposeBeforeRemove();
+```
+
+The `BeforeRemove` callback is invoked in all removal scenarios:
+- Explicit removal via `Remove()`
+- Automatic purging of expired items
+- When `Clear()` is called
+
+```csharp
+// Example: Track cache statistics
+int removedCount = 0;
+cache.BeforeRemove = _ => Interlocked.Increment(ref removedCount);
+```
+
 ## API Reference
 
 ### Properties
@@ -127,6 +170,8 @@ WriteLine(cache["key"]); // Returns 100 (case-insensitive)
 - **`Keys`**: Gets all non-expired keys
 - **`Values`**: Gets all non-expired values
 - **`RunPurgeTS`**: Gets/sets the interval for automatic purge checks
+- **`BeforeRemove`**: Optional callback invoked before items are removed from the cache
+- **`ThrowOnGetNotFound`**: If false (default is `true`), will not throw exception when key not found in indexer get.
 
 ### Methods
 
@@ -137,6 +182,7 @@ WriteLine(cache["key"]); // Returns 100 (case-insensitive)
 - **`Clear()`**: Removes all items
 - **`PurgeExpiredItems()`**: Manually purge all expired items
 - **`GetItems()`**: Enumerates all non-expired key-value pairs
+- **`SetDisposeBeforeRemove()`**: Convenience method to auto-dispose `IDisposable` values when removed
 
 ### Indexer
 
