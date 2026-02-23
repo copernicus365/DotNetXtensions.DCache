@@ -2,38 +2,64 @@
 
 [![NuGet](https://img.shields.io/nuget/v/DotNetXtensions.DCache.svg)](https://www.nuget.org/packages/DotNetXtensions.DCache)
 
-Provides cached dictionary types:
+High-performance caching types for .NET 8+
 
-- [`CacheDictionary`]("./README-CacheDictionary.md"): an in-memory cache dictionary whose items auto-expire after set timespan
-- [`DCache`]("./README-DCache.md"): an implementation of `IDistributedCache` that abstracts the distributed-cache logic, functioning like a simple in-memory dictionary
+- **[CacheDictionary](./README-CacheDictionary.md)**: Thread-safe in-memory cache dictionary with automatic time-based expiration
+- **[DCache](./README-DCache.md)**: Allows an IDistributedCache to look and act like a simple in-memory typed dictionary, with dual-layer caching
+
+## Installation
+
+```bash
+dotnet add package DotNetXtensions.DCache
+```
 
 ## CacheDictionary
 
-`CacheDictionary<TKey, TValue>` is a dictionary whose items automatically expire after a configurable amount of time, and that internally wraps a `ConcurrentDictionary`, making it thread-safe and suitable for concurrent scenarios where caching is needed.
+**[📖 Full Documentation](./README-CacheDictionary.md)**
 
-For more details, see the [CacheDictionary README](./README-CacheDictionary.md).
+```csharp
+// Items auto-expire after 5 minutes
+CacheDictionary<string, User> cache = new(TimeSpan.FromMinutes(5));
+cache["user123"] = new User { Name = "Alice" };
 
-### Key Features
+if (cache.TryGetValue("user123", out User user))
+    WriteLine(user.Name);
+```
+
+**Features**
 
 - **Time-Based Expiration**: Items automatically expire after a set duration
 - **Thread-Safe**: Built on `ConcurrentDictionary` for safe concurrent access
 - **High Performance**: Minimal overhead on normal Get/Set operations
 - **Passive Purging**: Expired items are removed intelligently without requiring external timers
 - **Guaranteed Fresh Data**: Expired items are never returned, even if still present internally
-- **Automatic Disposal**: Optional automatic disposal of `IDisposable` cached values via `disposeBeforeRemove` constructor parameter or `BeforeRemove` callback
-
-For more details, see the [DCache README](./README-DCache.md).
+- **Automatic Disposal**: Optional automatic disposal of `IDisposable` cached values
 
 ## DCache
 
-`DCache<T, TId>` is a strongly-typed wrapper around `IDistributedCache` that provides a two-tier caching strategy combining distributed caching with optional in-memory caching. It abstracts away the complexities of serialization, key management, and cache coordination, presenting a simple dictionary-like interface for storing and retrieving typed objects.
+**[📖 Full Documentation](./README-DCache.md)**
 
-### Key Features
+```csharp
+// Combines L1 (memory) + L2 (distributed) caching
+DCache<User, string> cache = new(distributedCache);
+await cache.SetAsync("user123", user);
 
-The primary goals of `DCache` are:
+User retrieved = await cache.GetAsync("user123");
+```
 
-1. **Type Safety**: Provides a strongly-typed interface over the untyped byte-array-based `IDistributedCache`
-2. **Dual-Layer Caching**: Combines fast in-memory caching (L1) with distributed caching (L2) for optimal performance
+**Features**
+
+1. **Simplicity**: With little effort or boilerplate, an `IDistributedCache` looks and acts like a simple in-memory typed dictionary
+2. **Dual-Layer Caching**: Combines fast (optional) in-memory caching (L1) with distributed caching (L2) for optimal performance
 3. **Automatic Serialization**: Handles JSON serialization/deserialization transparently using `System.Text.Json`
 4. **Simplified API**: Reduces boilerplate code for common caching patterns with typed keys and values
 
+
+## When to Use Which?
+
+| Use CacheDictionary when... | Use DCache when... |
+|------------------------------|---------------------|
+| Single-server scenarios | Multi-server/distributed systems |
+| You need time-based expiration | You're already using IDistributedCache |
+| Synchronous access is preferred | You need Redis, SQL Server, or other distributed caches |
+| Memory-only caching is sufficient | You want L1 + L2 caching optimization |
