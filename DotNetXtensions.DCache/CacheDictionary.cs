@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 
-namespace DotNetXtensions.DCache;
+namespace DotNetXtensions.Cache;
 
 /// <summary>
 /// A dictionary whose items expire after a set amount of time after

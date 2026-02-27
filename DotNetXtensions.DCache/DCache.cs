@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 
 using Microsoft.Extensions.Caching.Distributed;
 
-namespace DotNetXtensions.DCache;
+namespace DotNetXtensions.Cache;
 
 public enum DCacheGetSrc { None = 0, MemoryCache = 1, DistributedCache = 2 }
 

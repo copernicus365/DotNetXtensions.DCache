@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    <RootNamespace>DotNetXtensions.Cache.Tests</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,8 +17,9 @@
     <Using Include="System.Text" />
     <Using Include="System.Threading.Tasks" />
     <Using Include="Xunit" />
-    <Using Include="DotNetXtensions.DCache" />
     <Using Include="DotNetXtensions" />
+    <Using Include="DotNetXtensions.Cache" />
+    <Using Include="DotNetXtensions.Cache.Tests" />
   </ItemGroup>
 
   <ItemGroup>
@@ -25,11 +27,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="DotNetXtensions.Mini" Version="1.0.0-alpha-3.0" />
+    <PackageReference Include="DotNetXtensions.Mini" Version="1.0.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.3.0" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
       <PrivateAssets>all</PrivateAssets>

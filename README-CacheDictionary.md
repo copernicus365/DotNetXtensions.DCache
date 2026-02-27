@@ -24,7 +24,7 @@ dotnet add package DotNetXtensions.DCache
 ## Quick Start
 
 ```csharp
-using DotNetXtensions.DCache;
+using DotNetXtensions.Cache;
 
 // Create a cache where items expire after 5 minutes
 CacheDictionary<string, User> cache = new(TimeSpan.FromMinutes(5));

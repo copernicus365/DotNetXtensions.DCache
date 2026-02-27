@@ -1,4 +1,4 @@
-namespace DotNetXtensions.DCache.Tests;
+namespace DotNetXtensions.Cache.Tests;
 
 public class UnitTest1
 {
